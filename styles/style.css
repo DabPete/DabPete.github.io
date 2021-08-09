@@ -1,5 +1,7 @@
 p {
     color: red;
+    animation-duration: 3s;
+    animation-name: slidein;
   }
 
   @keyframes slidein {
