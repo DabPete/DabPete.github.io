@@ -14,6 +14,16 @@ function createShader(type, source) {
     gl.deleteShader(shader);
 }
 
+function setGeometry(gl) {
+    let cb_mesh = new Float32Array(cube_mesh(cube_spiral( [0,0,0], 1 ) ));
+    console.log("xyz hex mesh coords: ");
+    console.log(cb_mesh);
+    gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array(cb_mesh),
+        gl.STATIC_DRAW);
+  }
+
 function render(uptime){
     uptime *= 0.001; // time since 1st call - in seconds
 
@@ -21,7 +31,8 @@ function render(uptime){
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
     // map is drawn via triangle strips
-    gl.drawElements(gl.GL_POINTS, mapNodes, gl.UNSIGNED_BYTE, 0);
+    // gl.drawElements(gl.TRIANGLES, 19, gl.UNSIGNED_BYTE, 0);
+    gl.drawElements(gl.TRIANGLES, 84, gl.UNSIGNED_BYTE, 0);
 }
 
 function renderLoop(){
@@ -42,36 +53,29 @@ function main() {
     // fragment shader code
     const fsGLSL = `
     // fragment shader script
-    precision highp float;
+  precision highp float;
 
-    varying vec4 v_color;
+  varying vec4 v_color;
 
-    uniform vec2 u_resolution;
-    uniform vec2 u_inc;
+  uniform vec2 u_resolution;
+  uniform vec2 u_inc;
   
-    void main() {
-    vec2 st = (2.0 * (gl_FragCoord.xy/u_resolution)) - 1.0;
-    vec2 pos = gl_PointCoord.xy;
-
-    float inHex = ceil( (-0.5 * pos.x) - pos.y + 1.25 );
-
-    gl_FragColor = v_color*inHex;
-    }`;
+  void main() {
+    gl_FragColor = v_color;
+  }`;
 
     // vertex shader code
     const vsGLSL = `
-    attribute vec4 position;
-    attribute vec4 color;
+    attribute vec4 a_position;
+    attribute vec4 a_color;
+
+    uniform mat4 u_matrix;
 
     varying vec4 v_color;
 
-    uniform vec2 u_inc;
-
     void main() {
-        gl_Position = position;
-        gl_PointSize = 120.0;
-        v_color = color;
-
+        gl_Position = u_matrix*a_position;
+        v_color = a_color;
     }`;
 
     // If we don't have a GL context, give up now
@@ -88,50 +92,6 @@ function main() {
     // Clear the color buffer with specified clear color
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    // creation of hexagonal space
-    const outR = 1.0;
-    const innR = Math.sqrt(3.0) / 2.0;
-
-    const cnvHeight = new Float32Array([gl.canvas.height]);
-    const cnvWidth = new Float32Array([gl.canvas.width]);
-
-
-    const xnodes = 10.0;
-    const ynodes = Math.ceil(cnvHeight / (innR * cnvWidth)) * (xnodes - 1.0);
-    console.log(xnodes);
-    console.log(ynodes);
-
-    const xinc = 2.0 / (xnodes - 1.0);
-    const yinc = (cnvWidth / cnvHeight) * xinc * innR;
-
-    const hexGrid = [];
-    var colors = [];
-
-    // generating coordinates for hex mesh (+random colours for lulz)
-    for (i = 0.0; i < ynodes; i++) {
-        var skew = (i % 2.0)*0.5;
-
-        for (j = 0.0; j < xnodes; j++) {
-            // fix this to point to proper triangles
-            hexGrid[2*j + 2*i*xnodes + 0] = -1.0 + (j+skew) * xinc;   // x coord of hex grid
-            hexGrid[2*j + 2*i*xnodes + 1] = -1.0 + (i) * yinc;      // y coord of hex grid
-
-            colors = colors.concat([255 * Math.random(), 255 * Math.random(), 255 * Math.random(), 255]);
-        }
-    }
-
-    const indexArray = [1, 2, 3, 11, 12, 13, 20, 69];
-
-    // generating indicies array for mesh
-    // loop for edges
-
-    
-
-    mapNodes = indexArray.length;
-    console.log(hexGrid);
-    console.log(indexArray);
-    console.log("mapNodes count: "+mapNodes);
-
     const vertexShader = createShader(gl.VERTEX_SHADER, vsGLSL);
     const fragmentShader = createShader(gl.FRAGMENT_SHADER, fsGLSL);
 
@@ -145,30 +105,29 @@ function main() {
         throw new Error(gl.getProgramInfoLog(prg))
     };
 
-    // NOTE! These are only here to unclutter the diagram.
-    // It is safe to detach and delete shaders once
-    // a program is linked though it is arguably not common.
-    // and I usually don't do it.
+    // It is safe to detach and delete shaders once program is linked and compiled
     gl.detachShader(prg, vertexShader);
     gl.deleteShader(vertexShader);
     gl.detachShader(prg, fragmentShader);
     gl.deleteShader(fragmentShader);
 
-    const positionLoc = gl.getAttribLocation(prg, 'position');
-    const colorLoc = gl.getAttribLocation(prg, 'color');
-
-    const resolutionLoc = gl.getUniformLocation(prg, 'u_resolution')
-    const incrementsLoc = gl.getUniformLocation(prg, 'u_inc')
-
+    const positionLoc = gl.getAttribLocation(prg, 'a_position');
+    const colorLoc = gl.getAttribLocation(prg, 'a_color');
+    const matrixLocation = gl.getUniformLocation(prg, "u_matrix");
 
     // Buffer for vertex posiotions
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(hexGrid), gl.STATIC_DRAW);
+    setGeometry(gl);
 
     // Buffer for colors
+    let colors = [];
+    for(i=0;i<336;i++){
+        colors.push(Math.floor(Math.random()*255));
+    }
     const colorsU = new Uint8Array(colors);
-    console.log("Array of colors in 8-byte depth:" + colorsU);
+    console.log("U8Byte colors: ");
+    console.log(colorsU);
     const colorBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, colorsU, gl.STATIC_DRAW);
@@ -178,7 +137,7 @@ function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.vertexAttribPointer(
         positionLoc,
-        2,            // 2 values per vertex shader iteration
+        3,            // 2 values per vertex shader iteration
         gl.FLOAT,     // data is 32bit floats
         false,        // don't normalize
         0,            // stride (0 = auto)
@@ -197,18 +156,22 @@ function main() {
         0,                // offset into buffer
     );
 
+    var matrix = m4.projection(64.0/9.0, 4.0, 16.0);
+    matrix = m4.xRotate(matrix, 0.5);
+    // matrix = m4.translate(matrix, 4.0, 2.0, -1.5)
+    
+    
 
-    const indexArrayBYTE = new Uint8Array(indexArray);
+    const indexArrayBYTE = new Uint8Array([...Array(84).keys()]);
+    console.log("Element pointers: ");
     console.log(indexArrayBYTE);
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArrayBYTE, gl.STATIC_DRAW);
 
     gl.useProgram(prg);
-
-    gl.uniform2fv(resolutionLoc, [cnvWidth, cnvHeight]);
-    gl.uniform2fv(incrementsLoc, [xinc/2.0, yinc/2.0]);
-
+    // Set the matrix.
+    gl.uniformMatrix4fv(matrixLocation, false, matrix);
 
     renderLoop();
 }
