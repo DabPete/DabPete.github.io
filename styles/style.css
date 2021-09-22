@@ -1,15 +1,13 @@
-p {
+  html{
+    background-color: #222222;
+  }
+  
+  p {
     color: red;
-    animation-duration: 3s;
-    animation-name: slidein;
   }
 
-  @keyframes slidein {
-    from {
-      transform: translateX(0%);
-    }
-  
-    to {
-      transform: translateX(100%);
-    }
+  canvas{
+    width: 75%;
+    height: 100%;
+    object-fit: contain;
   }
