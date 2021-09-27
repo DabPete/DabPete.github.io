@@ -76,11 +76,14 @@ const tarZ = document.getElementById("targetPosZ");
 devui_list.addEventListener('click', updateMatrix);
 
 function updateMatrix(){
-  console.log("Calculated matrix: ");
   var camera = m4.setCam([camX.value, camY.value, camZ.value], [tarX.value, tarY.value, tarZ.value]);
+  console.log("Calculated setCam: ");
+  console.log(camera);
+
   var matrix = m4.perspective(Math.PI*0.5, 16.0/9.0,9.5*1.732, 1.5*1.732);
   // var matrix = m4.projection(16.0/9.0, 1.0, 1.0);
   matrix = m4.multiply(matrix, camera);
+  console.log("Calculated matrix: ");
   console.log(matrix);
 
   gl.uniformMatrix4fv(matrixLoc, false, matrix);

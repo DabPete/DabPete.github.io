@@ -1,4 +1,11 @@
 var m4 = {
+    identity: function(){
+      return [1, 0, 0, 0,
+              0, 1, 0, 0,
+              0, 0, 1, 0,
+              0, 0, 0, 1];
+    },
+
     translation: function(tx, ty, tz) {
       return [
          1,  0,  0,  0,
@@ -165,23 +172,43 @@ var m4 = {
       },
 
       setCam: function(camPos, focPos){
-        var Z = m4.subtractVectors(camPos, focPos);
+        var Z = m4.normalize(m4.subtractVectors(camPos, focPos));
+        console.log("Z vector: ")
+        console.log(Z);
+        var X = m4.normalize([-Z[2], 0,  Z[0]]);
+        console.log("X vector: ");
+        console.log(X);
+        var Y = m4.cross(Z, X);
+        console.log("Y vector: ");
+        console.log(Y);
+
         var ZX = m4.normalize([Z[0], 0   , Z[2]]);
         var ZY = m4.normalize([0   , Z[1], Z[2]]);
-        return [ ZX[2], -ZY[1]*ZX[0], ZY[2]*ZX[0], 0,
+        var XY = m4.normalize([Z[0], Z[1], 0   ]);
+        var A = ZY[2]*ZX[0];
+        var B = ZY[2]*ZX[2];
+
+        return [ -X[0],-X[2]*Z[1], Z[0], 0,
+                  0   ,-Y[1]     , Z[1], 0,
+                 -X[2], X[0]*Z[1], Z[2], 0,
+               camPos[0]*X[0] + camPos[2]*X[2],
+               camPos[1]*Y[1] + Z[1]*(camPos[0]*X[2] - camPos[2]*X[0]),
+              -camPos[1]*Z[1] + Y[1]*(camPos[0]*X[2] - camPos[2]*X[0]),
+              1];
+              //fallback in case of future errors
+        /*return [ ZX[2], -ZY[1]*ZX[0], ZY[2]*ZX[0], 0,
                  0    ,  ZY[2]      , ZY[1]      , 0,
                 -ZX[0], -ZY[1]*ZX[2], ZY[2]*ZX[2], 0,
               -camPos[0]*ZX[2] + camPos[2]*ZX[0],
               -camPos[1]*ZY[2] + ZY[1]*(camPos[2]*ZX[2] + camPos[0]*ZX[0]),
               -(camPos[1]*ZY[1]+ZY[2]*(camPos[2]*ZX[2] + camPos[0]*ZX[0])),
-              1];
-              //fallback in case of future errors
-        /*return [1, 0, 0, 0,
-                0,  ZY[2],  0    , 0,
-                0, -ZY[1],  ZY[2], 0,
-              -camPos[0], 
-              -camPos[1]*ZY[2]+camPos[2]*ZY[1], 
-              -camPos[2]*ZY[2]-camPos[1]*ZY[1], 
               1];*/
+              return [-XY[0]*ZX[2] - A*XY[1], -ZY[1]*ZX[0],  XY[1]*ZX[0] - A*XY[0], 0,
+              -XY[1]*ZY[1]          ,  ZY[2]      , -ZY[1]*ZX[1]          , 0,
+               ZX[0]*XY[0] - B*XY[1], -ZY[1]*ZX[2], -ZX[0]*XY[1] - B*XY[0], 0,
+            XY[0]*(camPos[0]*ZX[2] + camPos[2]*ZX[0]) + XY[1]*(camPos[1]*ZY[1]+ZY[2]*(camPos[2]*ZX[2] + camPos[0]*ZX[0])),
+            -camPos[1]*ZY[2] + ZY[1]*(camPos[2]*ZX[2] + camPos[0]*ZX[0]),
+            XY[0]*(camPos[1]*ZY[1]+ZY[2]*(camPos[2]*ZX[2] + camPos[0]*ZX[0])) - XY[1]*(camPos[0]*ZX[2] + camPos[2]*ZX[0]),
+            1];
       }
 }

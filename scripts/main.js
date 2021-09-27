@@ -99,14 +99,15 @@ function main() {
     );
 
     
-    var camera = m4.setCam([0, 1.732*3.0, 1.732*4.0], [-3, 0, -1*1.732]);
-    var matrix = m4.perspective(Math.PI*0.5, 16.0/9.0,9.5*1.732, 1.5*1.732);
+    // var camera = m4.setCam([0, 1.732*3.0, 1.732*0.0], [0, 0, 0*1.732]);
+    var matrix = m4.identity();
+    // matrix = m4.perspective(Math.PI*0.5, 16.0/9.0,9.5*1.732, 1.5*1.732);
     // var matrix = m4.projection(16.0/9.0, 1.0, 1.0);
-    matrix = m4.multiply(matrix, camera);
-    // matrix = m4.xRotate(matrix, Math.PI*0.2);
+    // matrix = m4.multiply(matrix, camera);
+    matrix = m4.xRotate(matrix, Math.PI*0.2955);
     // matrix = m4.translate(matrix, 0, -1.732*3.0, -1.732*4.0);
     // matrix = m4.scale(matrix, 0.1, 0.1, 0.05, 1.0);
-    // matrix = m4.translate(matrix, 4.0, 2.0, -1.5)
+    matrix = m4.translate(matrix, 0.0, -4.0, -3.0)
     console.log("Final transform matrix: ");
     console.log(matrix); 
     
