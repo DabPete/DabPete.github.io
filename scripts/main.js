@@ -2,7 +2,7 @@ var gl;
 var matrixLoc;
 var uptime = 0.0; // time for which loop was on (in sec)
 
-var grid_radius = 8.0;
+var grid_radius = 25.0;
 var hex_count = ((3*grid_radius*grid_radius) + (3*grid_radius) + 1);
 var verticies = hex_count*12;
 
@@ -99,18 +99,16 @@ function main() {
     );
 
     
-    // var camera = m4.setCam([0, 1.732*3.0, 1.732*0.0], [0, 0, 0*1.732]);
+    var camera = m4.setCam([0, 4.0, 3.0], [0, 0, 0]);
     var matrix = m4.identity();
-    // matrix = m4.perspective(Math.PI*0.5, 16.0/9.0,9.5*1.732, 1.5*1.732);
+    matrix = m4.perspective(Math.PI*0.5, 16.0/9.0, 10.0*1.732, 1.0*1.732);
+
     // var matrix = m4.projection(16.0/9.0, 1.0, 1.0);
-    // matrix = m4.multiply(matrix, camera);
-    matrix = m4.xRotate(matrix, Math.PI*0.2955);
+    matrix = m4.multiply(matrix, camera);
+    // matrix = m4.xRotate(matrix, Math.PI*0.2955);
     // matrix = m4.translate(matrix, 0, -1.732*3.0, -1.732*4.0);
     // matrix = m4.scale(matrix, 0.1, 0.1, 0.05, 1.0);
-    matrix = m4.translate(matrix, 0.0, -4.0, -3.0)
-    console.log("Final transform matrix: ");
-    console.log(matrix); 
-    
+    // matrix = m4.translate(matrix, 0.0, -4.0, -3.0)
 
     const indexArray2BYTE = new Uint16Array([...Array(verticies).keys()]);
     console.log("Element pointers: ");
