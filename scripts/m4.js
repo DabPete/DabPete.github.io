@@ -107,13 +107,21 @@ var m4 = {
         ];
       },
 
-      projection: function(w, h, d) {
-        return [
-           2/w, 0  , 0  , 0,
-           0  , 2/h, 0  , 0,
-           0  , 0  , 2/d, 0,
-           0  , 0  , 0  , 1,
-        ];
+      normalize: function(v) {
+        var lng = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+        // make sure we don't divide by 0.
+        if (lng) {return [v[0] / lng, v[1] / lng, v[2] / lng];}
+          return [0, 0, 0];
+      },
+
+      cross: function(a, b) {
+        return [a[1] * b[2] - a[2] * b[1],
+                a[2] * b[0] - a[0] * b[2],
+                a[0] * b[1] - a[1] * b[0]];
+      },
+
+      subtractVectors: function(a, b) {
+        return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
       },
 
       translate: function(m, tx, ty, tz) {
@@ -135,4 +143,45 @@ var m4 = {
       scale: function(m, sx, sy, sz) {
         return m4.multiply(m, m4.scaling(sx, sy, sz));
       },
-  };
+      // ortographic projection of space
+      projection: function(w, h, d) {
+        return [
+           2/w, 0  , 0  , 0,
+           0  , 2/h, 0  , 0,
+           0  , 0  , 2/d, 1,
+           0  , 0  , 0  , 1,
+        ];
+      },
+      // perspective projection
+      perspective: function(fov, ar, fr, nr) {
+        var f = Math.tan(Math.PI*0.5 - 0.5*fov);
+        var lng = -1.0/(fr-nr);
+        return [
+          f/ar, 0, 0,  0,
+          0   , f, 0,  0,
+          0   , 0, (fr+nr)*lng, -1,
+          0   , 0, 2.0*nr*fr*lng, 0
+        ];
+      },
+
+      setCam: function(camPos, focPos){
+        var Z = m4.subtractVectors(camPos, focPos);
+        var ZX = m4.normalize([Z[0], 0   , Z[2]]);
+        var ZY = m4.normalize([0   , Z[1], Z[2]]);
+        return [ ZX[2], -ZY[1]*ZX[0], ZY[2]*ZX[0], 0,
+                 0    ,  ZY[2]      , ZY[1]      , 0,
+                -ZX[0], -ZY[1]*ZX[2], ZY[2]*ZX[2], 0,
+              -camPos[0]*ZX[2] + camPos[2]*ZX[0],
+              -camPos[1]*ZY[2] + ZY[1]*(camPos[2]*ZX[2] + camPos[0]*ZX[0]),
+              -(camPos[1]*ZY[1]+ZY[2]*(camPos[2]*ZX[2] + camPos[0]*ZX[0])),
+              1];
+              //fallback in case of future errors
+        /*return [1, 0, 0, 0,
+                0,  ZY[2],  0    , 0,
+                0, -ZY[1],  ZY[2], 0,
+              -camPos[0], 
+              -camPos[1]*ZY[2]+camPos[2]*ZY[1], 
+              -camPos[2]*ZY[2]-camPos[1]*ZY[1], 
+              1];*/
+      }
+}

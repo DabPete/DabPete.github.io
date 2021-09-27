@@ -36,18 +36,12 @@ const cb_direction = [[ 1, -1,  0], [ 1,  0, -1], [ 0,  1, -1], [-1,  1,  0], [-
 
 // adds v1 to coords of specified h1
 function cube_add(h1, v1){
-    h1[0]+=v1[0];
-    h1[1]+=v1[1];
-    h1[2]+=v1[2];
-    return h1;
+    return [h1[0]+v1[0], h1[1]+v1[1], h1[2]+v1[2]];
 }
 
 // scales coords of h1 by factor of sf
 function cube_scale(h1, sf){
-    h1[0]*=sf;
-    h1[1]*=sf;
-    h1[2]*=sf;
-    return h1;
+    return [h1[0]*sf, h1[1]*sf, h1[2]*sf];
 }
 
 function cube_neighbor(h1, neight){
@@ -80,7 +74,11 @@ function cube_to_xyz(cb_crd, sz=1.0){
     return [1.5*sz*cb_crd[0], cb_crd[0]+cb_crd[1]+cb_crd[2], 1.732*sz*(cb_crd[2] + 0.5*cb_crd[0])];
 }
 
-function cube_hextriangles(cb_coords, sz=1.0){
+function cube_to_xyzw(cb_crd, sz=1.0){
+    return [1.5*sz*cb_crd[0], cb_crd[0]+cb_crd[1]+cb_crd[2], 1.732*sz*(cb_crd[2] + 0.5*cb_crd[0]), 1.0];
+}
+
+function cube_to_xyztriangles(cb_coords, sz=1.0){
     let xyz = cube_to_xyz(cb_coords, sz);
     return [xyz[0] - 0.5*sz, xyz[1], xyz[2] + 0.866*sz, // 0   flat top   0---1
             xyz[0] - sz    , xyz[1], xyz[2]           , // 5             /     \
@@ -97,11 +95,37 @@ function cube_hextriangles(cb_coords, sz=1.0){
         ];
 }
 
-function cube_mesh(cube_vec, size=1.0){
+function cube_to_xyzwtriangles(cb_coords, sz=1.0){
+    let xyz = cube_to_xyzw(cb_coords, sz);
+    return [xyz[0] - 0.5*sz, xyz[1], xyz[2] + 0.866*sz, 1.0,// 0   flat top   0---1
+            xyz[0] - sz    , xyz[1], xyz[2]           , 1.0,// 5             /     \
+            xyz[0] - 0.5*sz, xyz[1], xyz[2] - 0.866*sz, 1.0,// 4            5   c   2
+            xyz[0] + 0.5*sz, xyz[1], xyz[2] + 0.866*sz, 1.0,// 1             \     /
+            xyz[0] - 0.5*sz, xyz[1], xyz[2] + 0.866*sz, 1.0,// 0              4---3
+            xyz[0] - 0.5*sz, xyz[1], xyz[2] - 0.866*sz, 1.0,// 4    function is used to calculate
+            xyz[0] + 0.5*sz, xyz[1], xyz[2] + 0.866*sz, 1.0,// 1    xyz coordinates of anti-clockwise
+            xyz[0] - 0.5*sz, xyz[1], xyz[2] - 0.866*sz, 1.0,// 4    triangles for rendering of hexagons
+            xyz[0] + 0.5*sz, xyz[1], xyz[2] - 0.866*sz, 1.0,// 3
+            xyz[0] + sz    , xyz[1], xyz[2]           , 1.0,// 2
+            xyz[0] + 0.5*sz, xyz[1], xyz[2] + 0.866*sz, 1.0,// 1
+            xyz[0] + 0.5*sz, xyz[1], xyz[2] - 0.866*sz, 1.0 // 3
+        ];
+}
+
+function cube_xyz_mesh(cube_vec, size=1.0){
     let k = cube_vec.length/3;
     let results = [];
     for(let i=0;i<k; i++){
-        Array.prototype.push.apply(results, cube_hextriangles([cube_vec[i*3+0], cube_vec[i*3+1], cube_vec[i*3+2]]), size);
+        Array.prototype.push.apply(results, cube_to_xyztriangles([cube_vec[i*3+0], cube_vec[i*3+1], cube_vec[i*3+2]]), size);
+    }
+    return results;
+}
+
+function cube_xyzw_mesh(cube_vec, size=1.0){
+    let k = cube_vec.length/3;
+    let results = [];
+    for(let i=0;i<k; i++){
+        Array.prototype.push.apply(results, cube_to_xyzwtriangles([cube_vec[i*3+0], cube_vec[i*3+1], cube_vec[i*3+2]]), size);
     }
     return results;
 }

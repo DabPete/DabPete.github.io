@@ -2,12 +2,30 @@
     background-color: #222222;
   }
   
-  p {
-    color: red;
-  }
-
   canvas{
     width: 75%;
     height: 100%;
     object-fit: contain;
+  }
+  
+  ul{
+    display: flex;
+    list-style-type: none;
+    padding: 0px;
+    background-color: #666666;
+    border: 1px black solid;
+  }
+
+  li{
+    width: max-content;
+    padding-left: 20px;
+    padding-right: 20px;
+    background-color: #555555;
+    border: 1px black solid;
+  }
+
+  output{
+    text-align: center;
+    display: inline-block;
+    width: 38px;
   }
