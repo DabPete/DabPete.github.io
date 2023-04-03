@@ -122,9 +122,9 @@ function updateMatrix(){
   gl.uniformMatrix4fv(matrixLoc, false, matrix);
 }
 
-function updateRadius(){
+function updateRadius(event){
   var grid_radius = Number(hex_radius.value);
   var hex_count = ((3*grid_radius*grid_radius) + (3*grid_radius) + 1);
   verticies = hex_count*12;
-
+  event.stopPropagation();
 }

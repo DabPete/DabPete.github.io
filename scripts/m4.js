@@ -1,3 +1,5 @@
+'use strict'
+
 var m4 = {
     identity: function(){
       return [1, 0, 0, 0,
@@ -49,6 +51,30 @@ var m4 = {
          0, 0, 1, 0,
          0, 0, 0, 1,
       ];
+    },
+
+    // Rodrigues' Rotation - rotation around vector "vec3"
+    rRotation: function(angleInRadians, vec3){
+      var v = m4.normalize(vec3);
+      var s = Math.sin(angleInRadians);
+      var c = Math.cos(angleInRadians);
+
+      return [ c + v[0]*v[0]*(1-c)     , v[0]*v[1]*(1-c) - v[2]*s,  v[1]*s + v[0]*v[2]*(1-c), 0.0,
+               v[2]*s + v[0]*v[1]*(1-c), c + v[1]*v[1]*(1-c)     , -v[0]*s + v[1]*v[2]*(1-c), 0.0,
+              -v[1]*s + v[0]*v[2]*(1-c), v[0]*s + v[1]*v[2]*(1-c),  c + v[2]*v[2]*(1-c)     , 0.0,
+               0.0                     , 0.0                     ,  0.0                     , 1.0
+            ];
+    },
+    // Rodrigues' Rotation - rotation around unit vector "v"
+    rFastRotation: function(angleInRadians, v){
+      var s = Math.sin(angleInRadians);
+      var c = Math.cos(angleInRadians);
+
+      return [ c + v[0]*v[0]*(1-c)     , v[0]*v[1]*(1-c) - v[2]*s,  v[1]*s + v[0]*v[2]*(1-c), 0.0,
+               v[2]*s + v[0]*v[1]*(1-c), c + v[1]*v[1]*(1-c)     , -v[0]*s + v[1]*v[2]*(1-c), 0.0,
+              -v[1]*s + v[0]*v[2]*(1-c), v[0]*s + v[1]*v[2]*(1-c),  c + v[2]*v[2]*(1-c)     , 0.0,
+               0.0                     , 0.0                     ,  0.0                     , 1.0
+            ];
     },
    
     scaling: function(sx, sy, sz) {
@@ -114,11 +140,18 @@ var m4 = {
         ];
       },
 
+      vec4_multiply: function(vec4, mat){
+        return [vec4[0]*mat[0] + vec4[1]*mat[4] + vec4[2]*mat[ 8] + vec4[3]*mat[12],
+                vec4[0]*mat[1] + vec4[1]*mat[5] + vec4[2]*mat[ 9] + vec4[3]*mat[13],
+                vec4[0]*mat[2] + vec4[1]*mat[6] + vec4[2]*mat[10] + vec4[3]*mat[14],
+                vec4[0]*mat[3] + vec4[1]*mat[7] + vec4[2]*mat[11] + vec4[3]*mat[15]]
+      },
+
       normalize: function(v) {
         var lng = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
         // make sure we don't divide by 0.
         if (lng) {return [v[0] / lng, v[1] / lng, v[2] / lng];}
-          return [0, 0, 0];
+        return [0, 0, 0];
       },
 
       cross: function(a, b) {
@@ -146,12 +179,21 @@ var m4 = {
       zRotate: function(m, angleInRadians) {
         return m4.multiply(m, m4.zRotation(angleInRadians));
       },
+
+      rRotate: function(m, angleInRadians, vec3){
+        return m4.multiply(m, m4.zRotation(angleInRadians, vec3));
+      },
+
+      rFastRotate: function(m, angleInRadians, unit_v){
+        return m4.multiply(m, m4.zRotation(angleInRadians, unit_v));
+      },
      
       scale: function(m, sx, sy, sz) {
         return m4.multiply(m, m4.scaling(sx, sy, sz));
       },
+
       // ortographic projection of space
-      projection: function(w, h, d) {
+      ortho_projection: function(w, h, d) {
         return [
            2/w, 0  , 0  , 0,
            0  , 2/h, 0  , 0,
@@ -166,11 +208,25 @@ var m4 = {
         return [
           f/ar, 0, 0,  0,
           0   , f, 0,  0,
-          0   , 0, (fr+nr)*lng, -1,
+          0   , 0, (fr+nr)*lng,  -1,
           0   , 0, 2.0*nr*fr*lng, 0
         ];
       },
-
+      // Below matrix is product of multiplication of translation matrix, rotation around y axis and rotation around x axis
+      //                 cp   0  sp   0 |   1   0   0   0
+      //                  0   1   0   0 |   0  ct -st   0
+      //                -sp   0  cp   0 |   0  st  ct   0
+      //                  0   0   0   1 |   0   0   0   1
+      //               +----------------+----------------- Multiply yourself and go figure xd
+      //  1   0   0   0|
+      //  0   1   0   0|
+      //  0   0   1   0|
+      //-tx -ty -tz   1|
+      //
+      // Vector made with camera position and focus position (pointing opposite to looking direction); it's cross product with vector pointing directly up [0,1,0]
+      // allways yeilds vector perpendicular do Y axis - if that vector is normalized it yeilds [-cos(phi), 0, sin(phi)] (as those are proportional to -Z and X coordinates
+      // of camera vector just swapping of coordinates and their normalization is performed)
+      // 2 special cases while camera looks directly above and below itself are not handled - yeilding some random mess
       setCam: function(camPos, focPos){
         var Z = m4.normalize(m4.subtractVectors(camPos, focPos));
         var X = m4.normalize([-Z[2], 0,  Z[0]]);
