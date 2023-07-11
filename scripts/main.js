@@ -60,13 +60,14 @@ function drawScene(now){
         chainLength //wrd_map.size,  // num instances
       );
     
-    drawBorders();
-    ext.drawArraysInstancedANGLE(
-        gl.LINE_STRIP,
+    // drawBorders();
+    /* ext.drawArraysInstancedANGLE(
+	gl.LINE_STRIP,
         0,             // offset
         verticies + 3,   // num vertices per instance
         chainLength //wrd_map.size,  // num instances
       );
+      */
       
     requestAnimationFrame(drawScene);
 }
